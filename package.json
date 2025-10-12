@@ -1,0 +1,32 @@
+{
+  "name": "supply-control-tower",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Supply Control Tower - Expense Tracker Application",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --workspace=@supply-control-tower/backend",
+    "dev:frontend": "npm run dev --workspace=@supply-control-tower/frontend",
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=@supply-control-tower/backend",
+    "build:frontend": "npm run build --workspace=@supply-control-tower/frontend",
+    "test": "npm run test --workspaces",
+    "db:migrate": "npm run migrate --workspace=@supply-control-tower/backend",
+    "db:seed": "npm run seed --workspace=@supply-control-tower/backend",
+    "fx:update": "npm run fx:update --workspace=@supply-control-tower/backend",
+    "lint": "npm run lint --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.22"
+  }
+}

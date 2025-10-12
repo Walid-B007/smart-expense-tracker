@@ -1,0 +1,13 @@
+run = "npm run dev"
+entrypoint = "packages/backend/src/index.ts"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = ["sh", "-c", "npm run build && npm run dev:backend"]
+deploymentTarget = "cloudrun"
+
+[env]
+NODE_ENV = "production"
+PORT = "3001"

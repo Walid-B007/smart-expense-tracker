@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: expense_tracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./packages/backend/migrations:/docker-entrypoint-initdb.d
+
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/expense_tracker
+      NODE_ENV: development
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    volumes:
+      - ./packages/backend:/app/packages/backend
+      - /app/node_modules
+
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./packages/frontend:/app/packages/frontend
+      - /app/node_modules
+
+volumes:
+  postgres_data:
