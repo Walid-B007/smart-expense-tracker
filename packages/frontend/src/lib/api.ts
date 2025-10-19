@@ -72,17 +72,26 @@ export const transfers = {
 
 // Imports API
 export const imports = {
-  upload: (data: FormData) => api.post('/api/imports/upload', data, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  }),
-  getHistory: (params?: any) => api.get('/api/imports/history', { params }),
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/api/imports/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  setMapping: (jobId: string, mapping: Record<string, string>) =>
+    api.post(`/api/imports/${jobId}/mapping`, { mapping }),
+  execute: (jobId: string, accountId: string) =>
+    api.post(`/api/imports/${jobId}/execute`, { account_id: accountId }),
+  getHistory: (params?: any) => api.get('/api/imports', { params }),
 };
 
 // Foreign Exchange API
 export const fx = {
   getRates: (params?: any) => api.get('/api/fx/rates', { params }),
+  getCurrencies: () => api.get('/api/fx/currencies'),
   convert: (data: any) => api.post('/api/fx/convert', data),
 };
 

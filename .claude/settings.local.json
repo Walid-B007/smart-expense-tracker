@@ -17,7 +17,8 @@
       "mcp__ide__getDiagnostics",
       "Bash(git add -A)",
       "Bash(git log -3 --format='%s')",
-      "Bash(git commit -m \"$(cat <<''EOF''\nAdd comprehensive features: API integration, currency utilities, enhanced UI, and database improvements\n\nThis commit implements major enhancements across the application:\n- Added Supabase API client and currency formatting utilities\n- Enhanced Categories page with improved UI and category management\n- Updated Dashboard with better financial metrics and visualizations\n- Improved Transactions and Accounts pages with new features\n- Added database migration for improved category structure\n- Created seeding and migration scripts for backend\n- Cleaned up documentation files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd comprehensive features: API integration, currency utilities, enhanced UI, and database improvements\n\nThis commit implements major enhancements across the application:\n- Added Supabase API client and currency formatting utilities\n- Enhanced Categories page with improved UI and category management\n- Updated Dashboard with better financial metrics and visualizations\n- Improved Transactions and Accounts pages with new features\n- Added database migration for improved category structure\n- Created seeding and migration scripts for backend\n- Cleaned up documentation files\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(lsof -ti:3001)"
     ],
     "deny": [],
     "ask": []
