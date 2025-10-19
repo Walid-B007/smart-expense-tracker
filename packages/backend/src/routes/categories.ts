@@ -28,23 +28,8 @@ export const categoryRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(500).send({ error: error.message });
     }
 
-    // Build hierarchical structure
-    const categoryMap = new Map(data.map((cat) => [cat.id, { ...cat, children: [] }]));
-    const rootCategories: any[] = [];
-
-    data.forEach((cat) => {
-      const category = categoryMap.get(cat.id);
-      if (cat.parent_id) {
-        const parent = categoryMap.get(cat.parent_id);
-        if (parent) {
-          parent.children.push(category);
-        }
-      } else {
-        rootCategories.push(category);
-      }
-    });
-
-    return { categories: rootCategories };
+    // Return flat list - frontend will handle hierarchical structure if needed
+    return { categories: data };
   });
 
   // Get single category by ID

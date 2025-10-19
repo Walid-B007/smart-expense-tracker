@@ -48,7 +48,7 @@ export const accounts = {
   getAll: (params?: any) => api.get('/api/accounts', { params }),
   getById: (id: string) => api.get(`/api/accounts/${id}`),
   create: (data: any) => api.post('/api/accounts', data),
-  update: (id: string, data: any) => api.put(`/api/accounts/${id}`, data),
+  update: (id: string, data: any) => api.patch(`/api/accounts/${id}`, data),
   delete: (id: string) => api.delete(`/api/accounts/${id}`),
 };
 
@@ -57,7 +57,7 @@ export const categories = {
   getAll: (params?: any) => api.get('/api/categories', { params }),
   getById: (id: string) => api.get(`/api/categories/${id}`),
   create: (data: any) => api.post('/api/categories', data),
-  update: (id: string, data: any) => api.put(`/api/categories/${id}`, data),
+  update: (id: string, data: any) => api.patch(`/api/categories/${id}`, data),
   delete: (id: string) => api.delete(`/api/categories/${id}`),
 };
 
