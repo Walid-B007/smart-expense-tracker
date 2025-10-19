@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
-import { transactions } from '../lib/api';
+import { useEffect, useState, useMemo } from 'react';
+import { transactions, categories as categoriesApi, accounts as accountsApi } from '../lib/api';
 import { Card, Button } from '../components/ui';
 import { TransactionEditModal } from '../components/TransactionEditModal';
-import { PencilIcon, TrashIcon, ArrowsRightLeftIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PencilIcon, TrashIcon, ArrowsRightLeftIcon, XMarkIcon, MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
+import { formatCurrency } from '../lib/currency';
 
 export default function Transactions() {
   const [txList, setTxList] = useState<any[]>([]);
@@ -12,8 +13,22 @@ export default function Transactions() {
   const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
   const [deletingBulk, setDeletingBulk] = useState(false);
 
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedAccount, setSelectedAccount] = useState<string>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Categories and accounts for filters
+  const [categoriesList, setCategoriesList] = useState<any[]>([]);
+  const [accountsList, setAccountsList] = useState<any[]>([]);
+
   useEffect(() => {
     loadTransactions();
+    loadCategories();
+    loadAccounts();
   }, []);
 
   const loadTransactions = async () => {
@@ -25,6 +40,24 @@ export default function Transactions() {
       console.error('Failed to load transactions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const response = await categoriesApi.getAll();
+      setCategoriesList(response.data.categories || []);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
+
+  const loadAccounts = async () => {
+    try {
+      const response = await accountsApi.getAll();
+      setAccountsList(response.data.accounts || []);
+    } catch (error) {
+      console.error('Failed to load accounts:', error);
     }
   };
 
@@ -82,12 +115,70 @@ export default function Transactions() {
   };
 
   const handleSelectAll = () => {
-    if (selectedTransactions.length === txList.length) {
+    if (selectedTransactions.length === filteredTransactions.length) {
       setSelectedTransactions([]);
     } else {
-      setSelectedTransactions(txList.map(tx => tx.id));
+      setSelectedTransactions(filteredTransactions.map(tx => tx.id));
     }
   };
+
+  // Filter transactions based on all criteria
+  const filteredTransactions = useMemo(() => {
+    return txList.filter(tx => {
+      // Search filter (merchant name, description, notes)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch =
+          tx.merchant_name?.toLowerCase().includes(query) ||
+          tx.description?.toLowerCase().includes(query) ||
+          tx.notes?.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+
+      // Category filter
+      if (selectedCategory !== 'all') {
+        if (selectedCategory === 'uncategorized') {
+          if (tx.category_id) return false;
+        } else {
+          if (tx.category_id !== selectedCategory) return false;
+        }
+      }
+
+      // Account filter
+      if (selectedAccount !== 'all') {
+        if (tx.account_id !== selectedAccount) return false;
+      }
+
+      // Date range filter
+      if (startDate) {
+        const txDate = new Date(tx.transaction_date);
+        const filterStart = new Date(startDate);
+        if (txDate < filterStart) return false;
+      }
+
+      if (endDate) {
+        const txDate = new Date(tx.transaction_date);
+        const filterEnd = new Date(endDate);
+        filterEnd.setHours(23, 59, 59, 999); // Include the entire end date
+        if (txDate > filterEnd) return false;
+      }
+
+      return true;
+    });
+  }, [txList, searchQuery, selectedCategory, selectedAccount, startDate, endDate]);
+
+  // Reset filters
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSelectedAccount('all');
+    setStartDate('');
+    setEndDate('');
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = searchQuery || selectedCategory !== 'all' ||
+    selectedAccount !== 'all' || startDate || endDate;
 
   const handleBulkDelete = async () => {
     if (selectedTransactions.length === 0) return;
@@ -131,9 +222,132 @@ export default function Transactions() {
           <p className="text-gray-600 mt-1">View and manage all your transactions</p>
         </div>
         <div className="text-sm text-gray-600">
-          Total: <span className="font-semibold text-gray-900">{txList.length}</span> transactions
+          {hasActiveFilters ? (
+            <>
+              Showing <span className="font-semibold text-primary-600">{filteredTransactions.length}</span> of{' '}
+              <span className="font-semibold text-gray-900">{txList.length}</span> transactions
+            </>
+          ) : (
+            <>
+              Total: <span className="font-semibold text-gray-900">{txList.length}</span> transactions
+            </>
+          )}
         </div>
       </div>
+
+      {/* Search and Filter Bar */}
+      <Card hover padding="md" className="bg-gradient-to-br from-white to-gray-50">
+        <div className="space-y-4">
+          {/* Search Bar and Filter Toggle */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search transactions by merchant, description, or notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
+              />
+            </div>
+            <Button
+              variant={showFilters ? 'primary' : 'ghost'}
+              size="md"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 ${showFilters ? '' : 'border border-gray-300'}`}
+            >
+              <FunnelIcon className="h-5 w-5" />
+              Filters
+              {hasActiveFilters && !showFilters && (
+                <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary-600 rounded-full">
+                  •
+                </span>
+              )}
+            </Button>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="md"
+                onClick={handleResetFilters}
+                className="border border-gray-300 text-gray-700 hover:bg-gray-100"
+              >
+                Reset
+              </Button>
+            )}
+          </div>
+
+          {/* Filter Controls */}
+          {showFilters && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200 animate-slide-down">
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Category
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
+                >
+                  <option value="all">All Categories</option>
+                  <option value="uncategorized">Uncategorized</option>
+                  {categoriesList.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name}
+                      {cat.parent && ` (${cat.parent.name})`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Account Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Account
+                </label>
+                <select
+                  value={selectedAccount}
+                  onChange={(e) => setSelectedAccount(e.target.value)}
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
+                >
+                  <option value="all">All Accounts</option>
+                  {accountsList.map((acc) => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.currency})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date Range Filters */}
+              <div className="md:col-span-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Date Range
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
+                    placeholder="Start"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm transition"
+                    placeholder="End"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
 
       {/* Bulk Actions Bar */}
       {selectedTransactions.length > 0 && (
@@ -177,7 +391,7 @@ export default function Transactions() {
                 <th className="px-6 py-4 text-left">
                   <input
                     type="checkbox"
-                    checked={txList.length > 0 && selectedTransactions.length === txList.length}
+                    checked={filteredTransactions.length > 0 && selectedTransactions.length === filteredTransactions.length}
                     onChange={handleSelectAll}
                     className="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
                   />
@@ -203,14 +417,18 @@ export default function Transactions() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white">
-              {txList.length === 0 ? (
+              {filteredTransactions.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
-                    No transactions found. Import some data to get started!
+                    {txList.length === 0 ? (
+                      'No transactions found. Import some data to get started!'
+                    ) : (
+                      'No transactions match your filters. Try adjusting your search criteria.'
+                    )}
                   </td>
                 </tr>
               ) : (
-                txList.map((tx, index) => {
+                filteredTransactions.map((tx, index) => {
                   const isSelected = selectedTransactions.includes(tx.id);
                   return (
                     <tr
@@ -277,11 +495,7 @@ export default function Transactions() {
                     <td className={`px-6 py-4 whitespace-nowrap text-sm font-bold text-right ${
                       tx.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
                     }`}>
-                      <div className="flex items-center justify-end gap-1">
-                        <span>{tx.transaction_type === 'credit' ? '+' : '-'}</span>
-                        <span>{tx.amount.toFixed(2)}</span>
-                        <span className="text-xs font-normal text-gray-500">{tx.currency}</span>
-                      </div>
+                      {tx.transaction_type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end gap-2">

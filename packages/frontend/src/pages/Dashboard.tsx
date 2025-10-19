@@ -14,6 +14,7 @@ import {
   CheckIcon
 } from '@heroicons/react/24/outline';
 import { SankeyChart } from '../components/SankeyChart';
+import { formatCurrency } from '../lib/currency';
 
 export default function Dashboard() {
   const [summary, setSummary] = useState<any>(null);
@@ -120,7 +121,7 @@ export default function Dashboard() {
         spendingOverTimeRes,
         categoryBreakdownRes
       ] = await Promise.all([
-        dashboard.getSummary(currency, accountParams),
+        dashboard.getSummary({ currency, ...accountParams }),
         dashboard.getSpendingOverTime({ currency, period: timePeriod, ...dateParams, ...accountParams }),
         dashboard.getCategoryBreakdown({ currency, group_by: 'parent', ...dateParams, ...accountParams }),
       ]);
@@ -469,7 +470,7 @@ export default function Dashboard() {
                         {account.name}
                       </h4>
                       <p className="text-white text-sm font-semibold opacity-90">
-                        {account.balance?.toFixed(2)} {account.currency}
+                        {formatCurrency(account.balance || account.current_balance || 0, account.currency)}
                       </p>
                     </div>
 
@@ -496,10 +497,9 @@ export default function Dashboard() {
               <BanknotesIcon className="h-5 w-5 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-gray-900 mb-1">
-            {summary?.total_balance?.toFixed(2)}
+          <p className="text-3xl font-bold text-gray-900">
+            {formatCurrency(summary?.total_balance || 0, currency)}
           </p>
-          <p className="text-xs text-gray-500">{currency}</p>
         </Card>
 
         {/* Period Income */}
@@ -510,10 +510,9 @@ export default function Dashboard() {
               <ArrowTrendingUpIcon className="h-5 w-5 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-green-600 mb-1">
-            +{spendingOverTime.reduce((sum, item) => sum + (item.income || 0), 0).toFixed(2)}
+          <p className="text-3xl font-bold text-green-600">
+            +{formatCurrency(spendingOverTime.reduce((sum, item) => sum + (item.income || 0), 0), currency)}
           </p>
-          <p className="text-xs text-gray-500">{currency}</p>
         </Card>
 
         {/* Period Expenses */}
@@ -524,10 +523,9 @@ export default function Dashboard() {
               <ArrowTrendingDownIcon className="h-5 w-5 text-white" />
             </div>
           </div>
-          <p className="text-3xl font-bold text-red-600 mb-1">
-            -{spendingOverTime.reduce((sum, item) => sum + (item.expenses || 0), 0).toFixed(2)}
+          <p className="text-3xl font-bold text-red-600">
+            -{formatCurrency(spendingOverTime.reduce((sum, item) => sum + (item.expenses || 0), 0), currency)}
           </p>
-          <p className="text-xs text-gray-500">{currency}</p>
         </Card>
 
         {/* Net Savings */}
@@ -541,12 +539,9 @@ export default function Dashboard() {
           {(() => {
             const net = spendingOverTime.reduce((sum, item) => sum + ((item.income || 0) - (item.expenses || 0)), 0);
             return (
-              <>
-                <p className={`text-3xl font-bold mb-1 ${net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                  {net >= 0 ? '+' : ''}{net.toFixed(2)}
-                </p>
-                <p className="text-xs text-gray-500">{currency}</p>
-              </>
+              <p className={`text-3xl font-bold ${net >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                {net >= 0 ? '+' : ''}{formatCurrency(Math.abs(net), currency)}
+              </p>
             );
           })()}
         </Card>
@@ -622,7 +617,7 @@ export default function Dashboard() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: any) => `${value.toFixed(2)} ${currency}`}
+                    formatter={(value: any) => formatCurrency(value, currency)}
                     contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
                   />
                   <Legend verticalAlign="bottom" height={36} />
@@ -645,14 +640,14 @@ export default function Dashboard() {
                         <span className="text-lg">{cat.icon}</span>
                         <span className="font-semibold text-gray-900">{cat.category_name}</span>
                       </div>
-                      <span className="font-bold text-gray-900">{cat.total.toFixed(2)} {currency}</span>
+                      <span className="font-bold text-gray-900">{formatCurrency(cat.total, currency)}</span>
                     </div>
                     {cat.subcategories && cat.subcategories.length > 0 && (
                       <div className="ml-8 mt-2 space-y-1">
                         {cat.subcategories.map((sub: any, subIdx: number) => (
                           <div key={subIdx} className="flex items-center justify-between text-sm text-gray-600">
                             <span>{sub.name}</span>
-                            <span>{sub.total.toFixed(2)} {currency}</span>
+                            <span>{formatCurrency(sub.total, currency)}</span>
                           </div>
                         ))}
                       </div>
@@ -666,96 +661,93 @@ export default function Dashboard() {
           )}
         </Card>
 
-        {/* Top Spending Categories - Horizontal Bar */}
+        {/* Transaction Details - Filtered by Category */}
         <Card hover padding="lg">
           <CardHeader
-            title="Top Spending Categories"
-            subtitle={`Your biggest expenses - ${getDateRangeLabel()}`}
-          />
-          {categoryBreakdown.length > 0 ? (
-            <ResponsiveContainer width="100%" height={300} className="mt-4">
-              <BarChart
-                data={categoryBreakdown.slice(0, 7)}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={true} vertical={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: '#6b7280' }} />
-                <YAxis
-                  type="category"
-                  dataKey="category_name"
-                  tick={{ fontSize: 11, fill: '#374151' }}
-                  width={75}
-                />
-                <Tooltip
-                  formatter={(value: any) => [`${value.toFixed(2)} ${currency}`, 'Amount']}
-                  contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
-                />
-                <Bar dataKey="total" radius={[0, 8, 8, 0]}>
-                  {categoryBreakdown.slice(0, 7).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-500 text-center py-12">No spending data available</p>
-          )}
-        </Card>
-      </div>
-
-      {/* Filtered Transactions Table */}
-      {selectedCategory && (
-        <Card hover padding="lg" className="animate-slide-up">
-          <CardHeader
-            title="Filtered Transactions"
-            subtitle={`Showing transactions for selected category - ${getDateRangeLabel()}`}
+            title={selectedCategory ? "Filtered Transactions" : "Recent Transactions"}
+            subtitle={selectedCategory
+              ? `Showing transactions for selected category`
+              : `Click a category to filter transactions`
+            }
           />
           {loadingTransactions ? (
             <div className="flex justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : filteredTransactions.length > 0 ? (
-            <div className="mt-4 overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Description</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Account</th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 bg-white">
-                  {filteredTransactions.map((tx: any) => (
-                    <tr key={tx.id} className="hover:bg-primary-50 transition-colors">
-                      <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(tx.transaction_date).toLocaleDateString('en-US', {
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </td>
-                      <td className="px-6 py-3 text-sm text-gray-900">
-                        {tx.merchant_name || tx.description}
-                      </td>
-                      <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-600">
-                        {tx.account?.name || 'N/A'}
-                      </td>
-                      <td className={`px-6 py-3 whitespace-nowrap text-sm font-bold text-right ${
+          ) : selectedCategory && filteredTransactions.length > 0 ? (
+            <div className="mt-4 max-h-[600px] overflow-y-auto">
+              <div className="space-y-2">
+                {filteredTransactions.map((tx: any) => (
+                  <div
+                    key={tx.id}
+                    className="p-3 rounded-lg border border-gray-200 hover:bg-primary-50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {tx.merchant_name || tx.description}
+                          </div>
+                          {tx.category && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                              {tx.category.icon} {tx.category.name}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                          <span>
+                            {new Date(tx.transaction_date).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          {tx.account && (
+                            <>
+                              <span>•</span>
+                              <span>{tx.account.name}</span>
+                            </>
+                          )}
+                        </div>
+                        {tx.notes && (
+                          <div className="mt-1 text-xs text-gray-500 italic">
+                            {tx.notes}
+                          </div>
+                        )}
+                      </div>
+                      <div className={`text-right ml-4 font-bold ${
                         tx.transaction_type === 'credit' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {tx.transaction_type === 'credit' ? '+' : '-'}{tx.amount.toFixed(2)} {tx.currency}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        {tx.transaction_type === 'credit' ? '+' : '-'}{formatCurrency(tx.amount, tx.currency)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : selectedCategory ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="text-gray-400 mb-4">
+                <ChartBarIcon className="h-16 w-16" />
+              </div>
+              <p className="text-gray-500 text-center">No transactions found for this category</p>
+              <p className="text-sm text-gray-400 text-center mt-1">
+                Try selecting a different category or adjusting your date range
+              </p>
             </div>
           ) : (
-            <p className="text-gray-500 text-center py-12">No transactions found for this category</p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="text-gray-400 mb-4">
+                <ChartBarIcon className="h-16 w-16" />
+              </div>
+              <p className="text-gray-500 text-center font-medium">Click any category to view transactions</p>
+              <p className="text-sm text-gray-400 text-center mt-1">
+                Select a category from the pie chart to see detailed transaction list
+              </p>
+            </div>
           )}
         </Card>
-      )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { transfers } from '../lib/api';
+import { formatCurrency } from '../lib/currency';
 
 export default function Transfers() {
   const [transferList, setTransferList] = useState<any[]>([]);
@@ -43,7 +44,7 @@ export default function Transfers() {
                   </p>
                   <p className="text-sm text-gray-500">
                     {new Date(transfer.transfer_date).toLocaleDateString()} •
-                    {transfer.amount} {transfer.currency}
+                    {formatCurrency(transfer.amount, transfer.currency)}
                   </p>
                 </div>
               </div>

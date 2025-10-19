@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { transactions } from '../lib/api';
 import { Card, Button } from '../components/ui';
 import { SparklesIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { formatCurrency } from '../lib/currency';
 
 export default function Classify() {
   const [uncategorized, setUncategorized] = useState<any[]>([]);
@@ -154,7 +155,7 @@ export default function Classify() {
                   <p className="text-sm text-gray-500 mt-1">
                     {new Date(tx.transaction_date).toLocaleDateString()} •
                     <span className="font-semibold ml-1">
-                      {tx.amount} {tx.currency}
+                      {formatCurrency(tx.amount, tx.currency)}
                     </span>
                   </p>
                 </div>

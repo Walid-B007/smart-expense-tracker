@@ -8,7 +8,14 @@
       "Bash(cat:*)",
       "Bash(npm run dev:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npm run db:seed)",
+      "Bash(lsof -ti:3000,3001)",
+      "Bash(xargs -r kill -9)",
+      "Bash(tsx scripts/apply-category-improvements.ts)",
+      "Bash(npx tsx scripts/apply-category-improvements.ts)",
+      "mcp__ide__getDiagnostics",
+      "Bash(git add -A)"
     ],
     "deny": [],
     "ask": []

@@ -10,6 +10,7 @@ import {
   BuildingLibraryIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
+import { formatCurrency } from '../lib/currency';
 
 export default function Accounts() {
   const [accountsList, setAccountsList] = useState<any[]>([]);
@@ -102,7 +103,7 @@ export default function Accounts() {
           <div>
             <h3 className="text-sm font-medium text-gray-600 mb-1">Total Balance</h3>
             <p className="text-4xl font-bold text-gray-900">
-              {totalBalance.toFixed(2)}
+              {formatCurrency(totalBalance, accountsList[0]?.currency || 'USD')}
             </p>
             <p className="text-sm text-gray-500 mt-1">{accountsList.length} accounts</p>
           </div>
@@ -147,9 +148,8 @@ export default function Accounts() {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600 mb-1">Current Balance</p>
               <p className="text-3xl font-bold text-gray-900">
-                {account.current_balance.toFixed(2)}
+                {formatCurrency(account.current_balance, account.currency)}
               </p>
-              <p className="text-sm text-gray-500 mt-1">{account.currency}</p>
             </div>
 
             {account.institution && (
@@ -161,15 +161,15 @@ export default function Accounts() {
 
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex items-center justify-between text-xs text-gray-500">
-                <span>Initial: {account.initial_balance.toFixed(2)} {account.currency}</span>
+                <span>Initial: {formatCurrency(account.initial_balance, account.currency)}</span>
                 <span>
                   {account.current_balance >= account.initial_balance ? (
                     <span className="text-green-600 font-medium">
-                      +{(account.current_balance - account.initial_balance).toFixed(2)}
+                      +{formatCurrency(account.current_balance - account.initial_balance, account.currency)}
                     </span>
                   ) : (
                     <span className="text-red-600 font-medium">
-                      {(account.current_balance - account.initial_balance).toFixed(2)}
+                      {formatCurrency(account.current_balance - account.initial_balance, account.currency)}
                     </span>
                   )}
                 </span>
